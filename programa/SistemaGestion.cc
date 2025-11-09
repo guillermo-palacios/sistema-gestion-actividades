@@ -100,11 +100,89 @@ bool SistemaGestion::manejarLogin() {
 }
 
 bool SistemaGestion::manejarRegistro() {
+    int modo = 0;
+    std::string dni, email, contrasena, contrasenaDirector;
+    int dia, mes, anio;
+
     std::cout << "--- Registrarse ---" << std::endl;
-    // ... Próximamente: Lógica de pedir DNI/Email/Pass ...
-    // ... Usar compruebaDni(), etc. para validar ...
-    // ... y añadir un nuevo UsuarioRegistrado al vector 'usuarios_' ...
-    return false; // Por ahora, siempre falla
+
+    while (modo != 1 && modo != 2) {
+        std::cout << "==============================================================" << std::endl;
+        std::cout << "1-. Registrarse como estudiante." << std::endl;
+        std::cout << "2-. Registrarse como director." << std::endl;
+        std::cout << "Seleccione el modo:" << std::endl;
+        std::cout << "==============================================================" << std::endl;
+        std::cin >> modo;
+        if (modo != 1 && modo != 2) {
+            std::cout << "Seleccione un modo valido." << std::endl;
+        }
+    }
+
+    // --- 1. Pedir y Validar DNI ---
+    std::cout << "Introduzca su DNI: " << std::endl;
+    std::cin >> dni;
+    if (!SistemaGestion::compruebaDni(dni)) {
+        std::cout << "DNI incorrecto o con formato inválido." << std::endl;
+        return false;
+    }
+
+    // --- 2. Comprobar Duplicados ---
+    // (Buscamos en ambos vectores para asegurar que el DNI es único)
+    for (const auto& usr : usuarios_) {
+        if (usr.GetDni() == dni) {
+            std::cout << "Ya existe un usuario registrado con ese DNI." << std::endl;
+            return false;
+        }
+    }
+    for (const auto& dir : directores_) {
+        if (dir.GetDni() == dni) {
+            std::cout << "Ya existe un director registrado con ese DNI." << std::endl;
+            return false;
+        }
+    }
+
+    // --- 3. Pedir y Validar Resto de Datos ---
+    std::cout << "Introduzca su Fecha de Nacimiento 'DD MM YYYY': " << std::endl;
+    std::cin >> dia >> mes >> anio;
+    if (!SistemaGestion::esFechaValida(dia, mes, anio)) {
+        std::cout << "Introduce una fecha de nacimiento valida." << std::endl;
+        return false;
+    }
+
+    std::cout << "Introduzca su email: " << std::endl;
+    std::cin >> email;
+    if (!SistemaGestion::contieneDominio(email)) {
+        std::cout << "Introduzca un correo finalizado en @uco.es o en su defecto @gmail.com" << std::endl;
+        return false;
+    }
+
+    std::cout << "Introduzca su Contrasena: " << std::endl;
+    std::cin >> contrasena;
+
+    // --- 4. Añadir al Vector correspondiente ---
+    if (modo == 2) { // REGISTRO DIRECTOR
+        std::cout << "Introduzca su Contrasena de Director: " << std::endl;
+        std::cin >> contrasenaDirector;
+        
+        // (Aquí puedes añadir una validación para la contrasenaDirector si quieres)
+        // if (contrasenaDirector != "986532") { ... }
+
+        // Creamos el nuevo Director
+        Director nuevoDirector(dni, nombre_, apellido_, contrasena, contrasenaDirector, email, dia, mes, anio);
+        // Lo añadimos al vector de directores en memoria
+        directores_.push_back(nuevoDirector);
+        std::cout << "Director registrado con éxito." << std::endl;
+
+    } else { // REGISTRO ESTUDIANTE
+        
+        // Creamos el nuevo UsuarioRegistrado
+        UsuarioRegistrado nuevoUsuario(dni, nombre_, apellido_, contrasena, email, dia, mes, anio);
+        // Lo añadimos al vector de usuarios en memoria
+        usuarios_.push_back(nuevoUsuario);
+        std::cout << "Usuario registrado con éxito." << std::endl;
+    }
+
+    return true; // ¡El registro fue exitoso!
 }
 
 void SistemaGestion::visualizarActividadesVisitante() {
