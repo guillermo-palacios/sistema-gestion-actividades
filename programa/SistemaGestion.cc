@@ -411,10 +411,168 @@ bool SistemaGestion::manejarAnulacion() {
 }
 
 void SistemaGestion::mostrarMenuDirector() {
-    std::cout << "¡¡¡MENÚ DE DIRECTOR AÚN NO IMPLEMENTADO!!!" << std::endl;
-    cerrarSesion(); // Cerramos sesión para no bloquear el bucle
+    int opcion;
+    std::cout << "========================================================================" << std::endl;
+    std::cout << " BIENVENIDO, " << usuarioActual_->GetNombre() << " (Director) " << std::endl; // ¡Mejora!
+    std::cout << "========================================================================" << std::endl;
+    std::cout << "1-. Publicar una actividad." << std::endl;
+    std::cout << "2-. Modificar una actividad académica." << std::endl;
+    std::cout << "3-. Visualizar la asistencia a una actividad." << std::endl;
+    std::cout << "4-. Expulsar alumno de una actividad." << std::endl;
+    std::cout << "5-. Visualizar la cola de una actividad." << std::endl;
+    std::cout << "6-. Visualizar actividades disponibles." << std::endl;
+    std::cout << "7-. Cerrar sesión." << std::endl;
+    std::cout << "========================================================================" << std::endl;
+    std::cin >> opcion;
+
+    switch (opcion) {
+    case 1:
+        if (manejarPublicarActividad()) {
+            std::cout << "Actividad publicada con éxito." << std::endl;
+        } else {
+            std::cout << "Error al publicar la actividad." << std::endl;
+        }
+        break;
+    case 2:
+        if (manejarModificarActividad()) {
+            std::cout << "Actividad modificada con éxito." << std::endl;
+        } else {
+            std::cout << "Error al modificar la actividad." << std::endl;
+        }
+        break;
+    case 3:
+        manejarVerAsistencia();
+        break;
+    case 4:
+        if (manejarExpulsarAlumno()) {
+            std::cout << "Alumno expulsado con éxito." << std::endl;
+        } else {
+            std::cout << "Error al expulsar al alumno." << std::endl;
+        }
+        break;
+    case 5:
+        manejarVerCola();
+        break;
+    case 6:
+        visualizarActividadesVisitante(); // Reutilizamos la función del visitante
+        break;
+    case 7:
+        std::cout << "Cerrando sesión de Director..." << std::endl;
+        cerrarSesion();
+        break;
+    default:
+        std::cout << "Seleccione una opcion valida." << std::endl;
+    }
 }
 
+bool SistemaGestion::manejarPublicarActividad() {
+    std::string nombreActividad;
+    int dia, mes, anio, aforo; // (Aunque 'aforo' no lo usamos aún)
+    float precio;
+
+    std::cout << "--- Publicar Nueva Actividad ---" << std::endl;
+    std::cout << "Introduce el nombre de la actividad (una sola palabra): " << std::endl;
+    std::cin >> nombreActividad;
+
+    // Validamos que la actividad no exista ya
+    for (const auto& act : actividades_) {
+        if (act.GetNombreActividad() == nombreActividad) {
+            std::cout << "Error: Ya existe una actividad con ese nombre." << std::endl;
+            return false;
+        }
+    }
+
+    std::cout << "Introduzca la fecha 'DD MM YYYY': " << std::endl;
+    std::cin >> dia >> mes >> anio;
+    if (!SistemaGestion::esFechaValida(dia, mes, anio)) {
+        std::cout << "Error: Fecha inválida." << std::endl;
+        return false;
+    }
+
+    std::cout << "Introduzca el precio (ej: 50.0): " << std::endl;
+    std::cin >> precio;
+    if (precio < 0) {
+        std::cout << "Error: El precio no puede ser negativo." << std::endl;
+        return false;
+    }
+    
+    std::cout << "Introduzca el aforo máximo: " << std::endl;
+    std::cin >> aforo;
+
+    // Creamos la actividad y la añadimos al vector en memoria
+    Actividad nuevaActividad(nombreActividad, dia, mes, anio, aforo, precio);
+    actividades_.push_back(nuevaActividad);
+
+    return true; // ¡Éxito!
+}
+
+void SistemaGestion::manejarVerAsistencia() {
+    std::string nombreActividad;
+    std::cin.ignore(); // Limpiar buffer
+    std::cout << "Introduce el nombre de la actividad para ver su asistencia: " << std::endl;
+    std::getline(std::cin, nombreActividad);
+
+    int contador = 0;
+    std::cout << "--- Lista de Asistencia para '" << nombreActividad << "' ---" << std::endl;
+    
+    // Recorremos el vector de preinscripciones buscando coincidencias
+    for (const auto& pre : preinscripciones_) {
+        if (pre.nombreActividad == nombreActividad) {
+            // ¡Coincidencia! Buscamos el nombre del usuario
+            std::string nombreUsuario = "DNI: " + pre.dniUsuario; // Default
+            for(const auto& usr : usuarios_) {
+                if(usr.GetDni() == pre.dniUsuario) {
+                    nombreUsuario = usr.GetNombre() + " " + usr.GetApellido() + " (" + usr.GetEmail() + ")";
+                    break;
+                }
+            }
+            std::cout << "- " << nombreUsuario << std::endl;
+            contador++;
+        }
+    }
+
+    if (contador == 0) {
+        std::cout << "No hay ningún alumno inscrito en esta actividad." << std::endl;
+    } else {
+        std::cout << "Total: " << contador << " alumnos inscritos." << std::endl;
+    }
+    std::cout << "========================================" << std::endl;
+}
+
+bool SistemaGestion::manejarExpulsarAlumno() {
+    std::string nombreActividad, dniAlumno;
+    
+    std::cout << "Introduce el DNI del alumno a expulsar: " << std::endl;
+    std::cin >> dniAlumno;
+    
+    std::cin.ignore(); // Limpiar buffer
+    std::cout << "Introduce el nombre de la actividad de la que será expulsado: " << std::endl;
+    std::getline(std::cin, nombreActividad);
+
+    // Reutilizamos la lógica de 'manejarAnulacion'
+    // Buscamos y borramos la preinscripción
+    bool encontrado = false;
+    for (auto it = preinscripciones_.begin(); it != preinscripciones_.end(); ++it) {
+        if (it->dniUsuario == dniAlumno && it->nombreActividad == nombreActividad) {
+            it = preinscripciones_.erase(it);
+            encontrado = true;
+            break;
+        }
+    }
+
+    return encontrado;
+}
+
+// --- (Funciones pendientes) ---
+
+bool SistemaGestion::manejarModificarActividad() {
+    std::cout << "¡Función 'Modificar Actividad' aún no implementada!" << std::endl;
+    return false;
+}
+
+void SistemaGestion::manejarVerCola() {
+    std::cout << "¡Función 'Ver Cola' aún no implementada!" << std::endl;
+}
 
 // --- Métodos de Carga/Guardado ---
 

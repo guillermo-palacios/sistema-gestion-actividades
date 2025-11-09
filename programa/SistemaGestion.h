@@ -62,6 +62,12 @@ private:
     static bool contieneDominio(const std::string& email);
     static bool esIBANValido(const std::string& iban);
 
+    // --- Métodos de Lógica de Director ---
+    bool manejarPublicarActividad();
+    bool manejarModificarActividad();
+    void manejarVerAsistencia();
+    bool manejarExpulsarAlumno();
+    void manejarVerCola(); 
 
 public:
     // --- Constructor y Destructor ---
