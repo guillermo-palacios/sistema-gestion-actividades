@@ -6,6 +6,7 @@
 // --- Constructor ---
 SistemaGestion::SistemaGestion() {
     usuarioActual_ = nullptr; 
+    salirDelPrograma_ = false;
     cargarDatos();
     std::cout << "Sistema de Gestión inicializado." << std::endl;
 }
@@ -28,7 +29,6 @@ void SistemaGestion::Run() {
     std::cin >> apellido_; // Usamos la variable miembro apellido_
 
 
-    bool salir = false;
     do {
         if (usuarioActual_ == nullptr) {
             // Nadie ha iniciado sesión
@@ -42,9 +42,9 @@ void SistemaGestion::Run() {
         }
         // (La variable 'salir' se controlará dentro de los menús)
         // (Por ahora, forzamos la salida para no crear un bucle infinito)
-         salir = true; // <--- ¡¡BORRAREMOS ESTO PRONTO!!
+         salirDelPrograma_ = true; // <--- ¡¡BORRAREMOS ESTO PRONTO!!
 
-    } while (!salir);
+    } while (!salirDelPrograma_);
 }
 
 // --- Menú de Visitante ---
@@ -82,7 +82,7 @@ void SistemaGestion::mostrarMenuVisitante() {
             std::cout<<"=============================================================="<<std::endl;
             std::cout<<"GRACIAS POR SU VISITA, NOS VEMOS PRONTO !!    "<<std::endl;
             std::cout<<"=============================================================="<<std::endl;
-            // salir = true; // <-- Esto lo implementaremos
+            salirDelPrograma_ = true;
             break;
         default:
             std::cout<<"Seleccione una de las 4 opciones mostradas"<<std::endl;
@@ -248,8 +248,23 @@ bool SistemaGestion::manejarRegistro() {
 }
 
 void SistemaGestion::visualizarActividadesVisitante() {
-    std::cout << "--- Visualizar Actividades ---" << std::endl;
-    // ... Próximamente: Recorrer el vector 'actividades_' e imprimirlas ...
+    std::cout << "--- Visualizar Actividades Disponibles ---" << std::endl;
+    std::cout << "===============================================================" << std::endl;
+
+    if (actividades_.empty()) {
+        std::cout << "No hay actividades disponibles en este momento." << std::endl;
+    } else {
+        // Recorremos el vector de actividades
+        for (const Actividad& actividad : actividades_) {
+            // Imprimimos los datos usando los Getters
+            std::cout << "Nombre: " << actividad.GetNombreActividad() << std::endl;
+            std::cout << "  Fecha: " << actividad.GetDia() << "/"
+                      << actividad.GetMes() << "/" << actividad.GetAnio() << std::endl;
+            std::cout << "  Precio: " << actividad.GetPrecio() << " EUR" << std::endl;
+            std::cout << "---------------------------------------------------" << std::endl;
+        }
+    }
+    std::cout << "===============================================================" << std::endl;    
 }
 
 void SistemaGestion::cerrarSesion() {

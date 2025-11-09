@@ -25,7 +25,7 @@ private:
     std::string nombre_, apellido_;
     std::string dni_temp_, contrasena_temp_, email_temp_, contrasenaDirector_temp_;
     std::string nombreActividad_temp_;
-
+    bool salirDelPrograma_;
 
     // --- Métodos Privados (Ayudantes) ---
     void cargarDatos();
