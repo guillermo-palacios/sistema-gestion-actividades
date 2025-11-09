@@ -324,37 +324,38 @@ bool SistemaGestion::manejarPreinscripcion() {
     std::getline(std::cin, nombreActividad);
 
     // --- 1. Obtener el DNI del usuario actual ---
-    // Lo tenemos en 'usuarioActual_'
-    // Necesitamos hacer un 'cast' para acceder a GetDni()
     UsuarioRegistrado* usuario = dynamic_cast<UsuarioRegistrado*>(usuarioActual_);
-    if (!usuario) {
-        std::cout << "Error crítico: El usuario actual no es un UsuarioRegistrado." << std::endl;
-        return false;
-    }
+    if (!usuario) { return false; } // Error
     std::string dniUsuario = usuario->GetDni();
 
     // --- 2. Validar que la actividad existe ---
-    bool actividadEncontrada = false;
-    for (const auto& act : actividades_) {
+    Actividad* pActividad = nullptr; // Usamos un puntero para guardar la actividad
+    for (auto& act : actividades_) {
         if (act.GetNombreActividad() == nombreActividad) {
-            actividadEncontrada = true;
+            pActividad = &act; // Guardamos la dirección de la actividad
             break;
         }
     }
-    if (!actividadEncontrada) {
+    if (pActividad == nullptr) {
         std::cout << "Error: No existe ninguna actividad con ese nombre." << std::endl;
         return false;
     }
 
-    // --- 3. Validar que no esté ya inscrito ---
+    // --- 3. Validar que no esté ya inscrito (en lista O en cola) ---
     for (const auto& pre : preinscripciones_) {
         if (pre.dniUsuario == dniUsuario && pre.nombreActividad == nombreActividad) {
             std::cout << "Ya estás preinscrito en esta actividad." << std::endl;
             return false;
         }
     }
+    for (const auto& cola : colas_) {
+        if (cola.dniUsuario == dniUsuario && cola.nombreActividad == nombreActividad) {
+            std::cout << "Ya estás en la cola de espera para esta actividad." << std::endl;
+            return false;
+        }
+    }
 
-    // --- 4. Pedir y validar pago ---
+    // --- 4. Pedir y validar pago (lo hacemos ANTES de la lógica de aforo) ---
     std::cout << "==============================================================" << std::endl;
     std::cout << "A continuacion se realizara el pago de dicha actividad:" << std::endl;
     std::cout << "Introduzca el IBAN de su cuenta bancaria (Formato: ES + 22 dígitos): " << std::endl;
@@ -362,20 +363,77 @@ bool SistemaGestion::manejarPreinscripcion() {
 
     if (!SistemaGestion::esIBANValido(IBAN)) {
         std::cout << "El IBAN no es válido. Debe tener el formato ES seguido de 22 dígitos." << std::endl;
-        return false; // ¡Detiene el proceso!
+        return false;
     }
-    
     std::cout << "El IBAN es válido. El pago se procesará." << std::endl;
     std::cout << "==============================================================" << std::endl;
 
-    // --- 5. Añadir al vector de preinscripciones ---
-    Preinscripcion nuevaPre;
-    nuevaPre.dniUsuario = dniUsuario;
-    nuevaPre.nombreActividad = nombreActividad;
-    preinscripciones_.push_back(nuevaPre);
+    // --- 5. ¡NUEVA LÓGICA DE AFORO! ---
+    int aforo = pActividad->GetAforoMaximo();
+    int inscritos = 0;
+    for (const auto& pre : preinscripciones_) {
+        if (pre.nombreActividad == nombreActividad) {
+            inscritos++;
+        }
+    }
 
-    std::cout << "¡Preinscripción realizada con éxito!" << std::endl;
+    // Comparamos
+    if (inscritos < aforo) {
+        // ¡Hay sitio! Inscribimos
+        Preinscripcion nuevaPre;
+        nuevaPre.dniUsuario = dniUsuario;
+        nuevaPre.nombreActividad = nombreActividad;
+        preinscripciones_.push_back(nuevaPre);
+        std::cout << "¡Preinscripción realizada con éxito! Tienes plaza." << std::endl;
+    } else {
+        // ¡Lleno! A la cola
+        ColaEspera nuevaCola;
+        nuevaCola.dniUsuario = dniUsuario;
+        nuevaCola.nombreActividad = nombreActividad;
+        colas_.push_back(nuevaCola);
+        std::cout << "La actividad está llena. Has sido añadido/a a la cola de espera." << std::endl;
+    }
+    
     return true;
+}
+
+void SistemaGestion::promoverDeCola(const std::string& nombreActividad) {
+    // 1. Vemos si la actividad sigue llena
+    Actividad* pActividad = nullptr;
+    for (auto& act : actividades_) {
+        if (act.GetNombreActividad() == nombreActividad) { pActividad = &act; break; }
+    }
+    if (pActividad == nullptr) return; // La actividad ya no existe
+
+    int aforo = pActividad->GetAforoMaximo();
+    int inscritos = 0;
+    for (const auto& pre : preinscripciones_) {
+        if (pre.nombreActividad == nombreActividad) { inscritos++; }
+    }
+
+    // 2. Si hay hueco (inscritos < aforo)
+    if (inscritos < aforo) {
+        // 3. Buscamos al primero en la cola para esta actividad
+        for (auto it = colas_.begin(); it != colas_.end(); ++it) {
+            if (it->nombreActividad == nombreActividad) {
+                // ¡Encontrado!
+                Preinscripcion nuevaPre;
+                nuevaPre.dniUsuario = it->dniUsuario;
+                nuevaPre.nombreActividad = it->nombreActividad;
+                
+                // 4. Lo movemos de la cola a la lista de inscritos
+                preinscripciones_.push_back(nuevaPre);
+                colas_.erase(it); // Lo borramos de la cola
+
+                std::cout << "INFO (Sistema): Usuario " << nuevaPre.dniUsuario 
+                          << " ha sido promovido de la cola a una plaza para " 
+                          << nombreActividad << "." << std::endl;
+                
+                return; // Solo promovemos a uno
+            }
+        }
+    }
+    // Si no hay hueco, o no hay nadie en la cola, no hacemos nada.
 }
 
 bool SistemaGestion::manejarAnulacion() {
@@ -403,6 +461,7 @@ bool SistemaGestion::manejarAnulacion() {
 
     if (encontrado) {
         std::cout << "Preinscripción anulada con éxito." << std::endl;
+        promoverDeCola(nombreActividad);
         return true;
     } else {
         std::cout << "Error: No se ha encontrado ninguna preinscripción a tu nombre para esa actividad." << std::endl;
@@ -558,6 +617,10 @@ bool SistemaGestion::manejarExpulsarAlumno() {
             encontrado = true;
             break;
         }
+    }
+
+    if (encontrado) {
+        promoverDeCola(nombreActividad);
     }
 
     return encontrado;

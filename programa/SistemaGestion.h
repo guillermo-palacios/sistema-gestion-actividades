@@ -74,6 +74,7 @@ private:
     void manejarVerAsistencia();
     bool manejarExpulsarAlumno();
     void manejarVerCola(); 
+    void promoverDeCola(const std::string& nombreActividad);
 
 public:
     // --- Constructor y Destructor ---
