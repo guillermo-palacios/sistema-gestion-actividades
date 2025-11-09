@@ -1,0 +1,19 @@
+# Archivos compilados de C++
+*.o
+*.out
+*.exe
+programa/programa-main
+
+# Archivos generados por CMake
+CMakeCache.txt
+CMakeFiles/
+Makefile
+cmake_install.cmake
+
+# Archivos de IDE (opcional, pero buena práctica)
+.vscode/
+.idea/
+
+# Datos (no subir los .txt con datos, solo los de ejemplo)
+*.txt
+!*.txt.sample
