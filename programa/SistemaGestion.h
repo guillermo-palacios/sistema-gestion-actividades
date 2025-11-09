@@ -10,11 +10,19 @@
 
 class SistemaGestion {
 private:
+    // --- Estructura de Datos Interna ---
+    // Usamos un struct simple para guardar preinscripciones en memoria
+    struct Preinscripcion {
+        std::string nombreActividad;
+        std::string dniUsuario;
+        // (Podemos añadir más campos si es necesario, como el email o nombre)
+    };
+
     // --- Almacenamiento de Datos en Memoria ---
     std::vector<UsuarioRegistrado> usuarios_;
     std::vector<Director> directores_;
     std::vector<Actividad> actividades_;
-    // (Añadiremos preinscripciones y colas más tarde)
+    std::vector<Preinscripcion> preinscripciones_;
 
     // --- Usuario Actual ---
     Usuario* usuarioActual_; // Puntero al usuario logueado
@@ -42,13 +50,18 @@ private:
     void visualizarActividadesVisitante();
     void cerrarSesion();
 
-    // (Añadiremos más métodos de lógica de usuario/director aquí)
+    // --- Métodos de Lógica de Usuario Registrado ---
+    bool manejarPreinscripcion();
+    bool manejarAnulacion();
+    void visualizarActividadesUsuario();
 
     // --- Métodos de Validación (Movidos de otros archivos) ---
     // Los hacemos 'static' porque no dependen de un objeto 'SistemaGestion'
     static bool compruebaDni(const std::string& dni);
     static bool esFechaValida(int dia, int mes, int anio);
     static bool contieneDominio(const std::string& email);
+    static bool esIBANValido(const std::string& iban);
+
 
 public:
     // --- Constructor y Destructor ---

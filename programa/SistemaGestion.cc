@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <regex>
 
 // --- Constructor ---
 SistemaGestion::SistemaGestion() {
@@ -40,10 +41,7 @@ void SistemaGestion::Run() {
             // El usuario actual es un UsuarioRegistrado
             mostrarMenuUsuario();
         }
-        // (La variable 'salir' se controlará dentro de los menús)
-        // (Por ahora, forzamos la salida para no crear un bucle infinito)
-         salirDelPrograma_ = true; // <--- ¡¡BORRAREMOS ESTO PRONTO!!
-
+        
     } while (!salirDelPrograma_);
 }
 
@@ -278,8 +276,138 @@ void SistemaGestion::cerrarSesion() {
 // --- Métodos de Menús de Usuario/Director (Aún vacíos) ---
 
 void SistemaGestion::mostrarMenuUsuario() {
-    std::cout << "¡¡¡MENÚ DE USUARIO AÚN NO IMPLEMENTADO!!!" << std::endl;
-    cerrarSesion(); // Cerramos sesión para no bloquear el bucle
+    int opcion2;
+    std::cout << "==============================================================" << std::endl;
+    std::cout << "  BIENVENIDO, " << usuarioActual_->GetNombre() << " (Usuario) " << std::endl; // ¡Mejora!
+    std::cout << "==============================================================" << std::endl;
+    std::cout << "1-. Visualizar actividades disponibles." << std::endl;
+    std::cout << "2-. Preinscribirse a una actividad." << std::endl;
+    std::cout << "3-. Anular una preinscripción." << std::endl;
+    std::cout << "4-. Cerrar sesión." << std::endl;
+    std::cout << "==============================================================" << std::endl;
+    std::cin >> opcion2;
+
+    switch (opcion2) {
+    case 1:
+        visualizarActividadesUsuario();
+        break;
+    case 2:
+        if (!manejarPreinscripcion()) {
+            std::cout << "Error al realizar la preinscripcion." << std::endl;
+        }
+        break;
+    case 3:
+        if (!manejarAnulacion()) {
+            std::cout << "Error al anular la preinscripcion." << std::endl;
+        }
+        break;
+    case 4:
+        std::cout << "==============================================================" << std::endl;
+        std::cout << "CERRANDO SESION." << std::endl;
+        std::cout << "==============================================================" << std::endl;
+        cerrarSesion(); // Llama a la función de cerrar sesión
+        break;
+    default:
+        std::cout << "Seleccione una opcion valida." << std::endl;
+    }
+}
+
+void SistemaGestion::visualizarActividadesUsuario() {
+    // Por ahora, el usuario ve lo mismo que el visitante.
+    visualizarActividadesVisitante();
+}
+
+bool SistemaGestion::manejarPreinscripcion() {
+    std::string nombreActividad, IBAN;
+    std::cin.ignore(); // Limpiar el buffer del 'cin' anterior
+    std::cout << "Introduzca el nombre de la actividad a la que desea preinscribirse: " << std::endl;
+    std::getline(std::cin, nombreActividad);
+
+    // --- 1. Obtener el DNI del usuario actual ---
+    // Lo tenemos en 'usuarioActual_'
+    // Necesitamos hacer un 'cast' para acceder a GetDni()
+    UsuarioRegistrado* usuario = dynamic_cast<UsuarioRegistrado*>(usuarioActual_);
+    if (!usuario) {
+        std::cout << "Error crítico: El usuario actual no es un UsuarioRegistrado." << std::endl;
+        return false;
+    }
+    std::string dniUsuario = usuario->GetDni();
+
+    // --- 2. Validar que la actividad existe ---
+    bool actividadEncontrada = false;
+    for (const auto& act : actividades_) {
+        if (act.GetNombreActividad() == nombreActividad) {
+            actividadEncontrada = true;
+            break;
+        }
+    }
+    if (!actividadEncontrada) {
+        std::cout << "Error: No existe ninguna actividad con ese nombre." << std::endl;
+        return false;
+    }
+
+    // --- 3. Validar que no esté ya inscrito ---
+    for (const auto& pre : preinscripciones_) {
+        if (pre.dniUsuario == dniUsuario && pre.nombreActividad == nombreActividad) {
+            std::cout << "Ya estás preinscrito en esta actividad." << std::endl;
+            return false;
+        }
+    }
+
+    // --- 4. Pedir y validar pago ---
+    std::cout << "==============================================================" << std::endl;
+    std::cout << "A continuacion se realizara el pago de dicha actividad:" << std::endl;
+    std::cout << "Introduzca el IBAN de su cuenta bancaria (Formato: ES + 22 dígitos): " << std::endl;
+    std::cin >> IBAN;
+
+    if (!SistemaGestion::esIBANValido(IBAN)) {
+        std::cout << "El IBAN no es válido. Debe tener el formato ES seguido de 22 dígitos." << std::endl;
+        return false; // ¡Detiene el proceso!
+    }
+    
+    std::cout << "El IBAN es válido. El pago se procesará." << std::endl;
+    std::cout << "==============================================================" << std::endl;
+
+    // --- 5. Añadir al vector de preinscripciones ---
+    Preinscripcion nuevaPre;
+    nuevaPre.dniUsuario = dniUsuario;
+    nuevaPre.nombreActividad = nombreActividad;
+    preinscripciones_.push_back(nuevaPre);
+
+    std::cout << "¡Preinscripción realizada con éxito!" << std::endl;
+    return true;
+}
+
+bool SistemaGestion::manejarAnulacion() {
+    std::string nombreActividad;
+    std::cin.ignore(); // Limpiar el buffer
+    std::cout << "Introduzca el nombre de la actividad que desea anular: " << std::endl;
+    std::getline(std::cin, nombreActividad);
+
+    // --- 1. Obtener DNI del usuario actual ---
+    UsuarioRegistrado* usuario = dynamic_cast<UsuarioRegistrado*>(usuarioActual_);
+    if (!usuario) return false; // Error silencioso
+    std::string dniUsuario = usuario->GetDni();
+
+    // --- 2. Buscar y eliminar la preinscripción ---
+    bool encontrado = false;
+    // Usamos un iterador para poder borrar elementos mientras recorremos
+    for (auto it = preinscripciones_.begin(); it != preinscripciones_.end(); ++it) {
+        if (it->dniUsuario == dniUsuario && it->nombreActividad == nombreActividad) {
+            // ¡Encontrado! Lo borramos del vector
+            it = preinscripciones_.erase(it);
+            encontrado = true;
+            break; // Asumimos que solo se puede inscribir una vez
+        }
+    }
+
+    if (encontrado) {
+        std::cout << "Preinscripción anulada con éxito." << std::endl;
+        return true;
+    } else {
+        std::cout << "Error: No se ha encontrado ninguna preinscripción a tu nombre para esa actividad." << std::endl;
+        return false;
+    }
 }
 
 void SistemaGestion::mostrarMenuDirector() {
@@ -294,27 +422,18 @@ void SistemaGestion::cargarDatos() {
     std::ifstream fichero;
     std::string linea;
 
-    // --- 1. Cargar Usuarios Registrados ---
+    // --- 1. Cargar Usuarios ---
     fichero.open("UsuariosRegistrados.txt");
     if (!fichero.is_open()) {
-        std::cout << "Advertencia: No se pudo abrir 'UsuariosRegistrados.txt'. Creando uno nuevo." << std::endl;
+        std::cout << "Advertencia: No se pudo abrir 'UsuariosRegistrados.txt'." << std::endl;
     } else {
         while (std::getline(fichero, linea)) {
-            if (linea.empty() || linea[0] == '#') continue; // Ignorar líneas vacías o comentarios
-
+            if (linea.empty() || linea[0] == '#') continue; 
             std::stringstream ss(linea);
-            std::string nombre, apellido, dni, fechaStr, email, contrasena;
-            int dia = 0, mes = 0, anio = 0;
-            char barra; // Para consumir el '/' en la fecha
-
-            // Formato: Nombre Apellido DNI DD/MM/YYYY Email Contrasena
+            std::string nombre, apellido, dni, email, contrasena;
+            int dia = 0, mes = 0, anio = 0; char barra;
             ss >> nombre >> apellido >> dni >> dia >> barra >> mes >> barra >> anio >> email >> contrasena;
-
-            // Creamos un nuevo objeto UsuarioRegistrado con los datos leídos
-            UsuarioRegistrado nuevoUsuario(dni, nombre, apellido, contrasena, email, dia, mes, anio);
-            
-            // Añadimos el nuevo usuario a nuestro vector en memoria
-            usuarios_.push_back(nuevoUsuario);
+            usuarios_.push_back(UsuarioRegistrado(dni, nombre, apellido, contrasena, email, dia, mes, anio));
         }
         fichero.close();
         std::cout << "Cargados " << usuarios_.size() << " usuarios." << std::endl;
@@ -323,21 +442,15 @@ void SistemaGestion::cargarDatos() {
     // --- 2. Cargar Directores ---
     fichero.open("Directores.txt");
     if (!fichero.is_open()) {
-        std::cout << "Advertencia: No se pudo abrir 'Directores.txt'. Creando uno nuevo." << std::endl;
+        std::cout << "Advertencia: No se pudo abrir 'Directores.txt'." << std::endl;
     } else {
         while (std::getline(fichero, linea)) {
-            if (linea.empty() || linea[0] == '#') continue; 
-
+            if (linea.empty() || linea[0] == '#') continue;
             std::stringstream ss(linea);
-            std::string nombre, apellido, dni, fechaStr, email, contrasena, contrasenaDir;
-            int dia = 0, mes = 0, anio = 0;
-            char barra; 
-
-            // Formato: Nombre Apellido DNI DD/MM/YYYY Email Contrasena ContrasenaDirector
+            std::string nombre, apellido, dni, email, contrasena, contrasenaDir;
+            int dia = 0, mes = 0, anio = 0; char barra;
             ss >> nombre >> apellido >> dni >> dia >> barra >> mes >> barra >> anio >> email >> contrasena >> contrasenaDir;
-
-            Director nuevoDirector(dni, nombre, apellido, contrasena, contrasenaDir, email, dia, mes, anio);
-            directores_.push_back(nuevoDirector);
+            directores_.push_back(Director(dni, nombre, apellido, contrasena, contrasenaDir, email, dia, mes, anio));
         }
         fichero.close();
         std::cout << "Cargados " << directores_.size() << " directores." << std::endl;
@@ -346,81 +459,65 @@ void SistemaGestion::cargarDatos() {
     // --- 3. Cargar Actividades ---
     fichero.open("Actividades.txt");
     if (!fichero.is_open()) {
-        std::cout << "Advertencia: No se pudo abrir 'Actividades.txt'. Creando uno nuevo." << std::endl;
+        std::cout << "Advertencia: No se pudo abrir 'Actividades.txt'." << std::endl;
     } else {
         while (std::getline(fichero, linea)) {
             if (linea.empty() || linea[0] == '#') continue;
-
             std::stringstream ss(linea);
-            std::string nombreActividad, fechaStr;
-            float precio;
-            int dia = 0, mes = 0, anio = 0;
-            char barra;
-
-            // Formato: NombreDeLaActividad (puede tener espacios) DD/MM/YYYY Precio
-            // Leer hasta la fecha es más complicado si el nombre tiene espacios.
-            // Por ahora, asumimos que el nombre NO tiene espacios para simplificar.
-            // Si tu nombre tiene espacios, necesitaremos un parseo más avanzado.
-            
-            // Formato (simple): NombreActividad DD/MM/YYYY Precio
+            std::string nombreActividad;
+            float precio; int dia = 0, mes = 0, anio = 0; char barra;
             ss >> nombreActividad >> dia >> barra >> mes >> barra >> anio >> precio;
-
-            // (Nota: Faltan Aforo en el .txt y en la clase Actividad)
-            Actividad nuevaActividad(nombreActividad, dia, mes, anio, 0 /*aforo*/, precio);
-            actividades_.push_back(nuevaActividad);
+            actividades_.push_back(Actividad(nombreActividad, dia, mes, anio, 0, precio));
         }
         fichero.close();
         std::cout << "Cargadas " << actividades_.size() << " actividades." << std::endl;
     }
 
-    // (Aún no cargamos Preinscripciones ni Colas, lo haremos después)
-}
+    // --- 4. Cargar Preinscripciones ---
+    fichero.open("Preinscripciones.txt");
+    if (!fichero.is_open()) {
+        std::cout << "Advertencia: No se pudo abrir 'Preinscripciones.txt'." << std::endl;
+    } else {
+        while (std::getline(fichero, linea)) {
+            if (linea.empty() || linea[0] == '#') continue;
+            std::stringstream ss(linea);
+            Preinscripcion pre;
+            // Formato: DNI_Usuario Nombre_Actividad (simple)
+            ss >> pre.dniUsuario >> pre.nombreActividad; 
+            preinscripciones_.push_back(pre);
+        }
+        fichero.close();
+        std::cout << "Cargadas " << preinscripciones_.size() << " preinscripciones." << std::endl;
+    }}
 
 void SistemaGestion::guardarDatos() {
-    // Abrimos los ficheros en modo 'trunc' (truncar), que borra
-    // el contenido anterior antes de escribir el nuevo.
+    // --- 1. Guardar Usuarios ---
     std::ofstream ficheroUsuarios("UsuariosRegistrados.txt", std::ios::trunc);
-    std::ofstream ficheroDirectores("Directores.txt", std::ios::trunc);
-    std::ofstream ficheroActividades("Actividades.txt", std::ios::trunc);
-
-    // --- 1. Guardar Usuarios Registrados ---
     if (!ficheroUsuarios.is_open()) {
-        std::cerr << "Error crítico: No se pudo abrir 'UsuariosRegistrados.txt' para guardar." << std::endl;
+        std::cerr << "Error: No se pudo guardar 'UsuariosRegistrados.txt'." << std::endl;
     } else {
-        // Escribimos la cabecera (buena práctica)
         ficheroUsuarios << "# Formato: Nombre Apellido DNI DD/MM/YYYY Email Contrasena" << std::endl;
-        
-        // Recorremos el vector de usuarios
-        for (const UsuarioRegistrado& usuario : usuarios_) {
-            // Escribimos los datos de cada usuario en una nueva línea
-            ficheroUsuarios << usuario.GetNombre() << " "
-                            << usuario.GetApellido() << " "
-                            << usuario.GetDni() << " "
-                            << usuario.GetDia() << "/"
-                            << usuario.GetMes() << "/"
-                            << usuario.GetAnio() << " "
-                            << usuario.GetEmail() << " "
-                            << usuario.GetContrasena() << std::endl;
+        for (const auto& usuario : usuarios_) {
+            ficheroUsuarios << usuario.GetNombre() << " " << usuario.GetApellido() << " "
+                            << usuario.GetDni() << " " << usuario.GetDia() << "/"
+                            << usuario.GetMes() << "/" << usuario.GetAnio() << " "
+                            << usuario.GetEmail() << " " << usuario.GetContrasena() << std::endl;
         }
         ficheroUsuarios.close();
         std::cout << "Guardados " << usuarios_.size() << " usuarios." << std::endl;
     }
 
     // --- 2. Guardar Directores ---
+    std::ofstream ficheroDirectores("Directores.txt", std::ios::trunc);
     if (!ficheroDirectores.is_open()) {
-        std::cerr << "Error crítico: No se pudo abrir 'Directores.txt' para guardar." << std::endl;
+        std::cerr << "Error: No se pudo guardar 'Directores.txt'." << std::endl;
     } else {
         ficheroDirectores << "# Formato: Nombre Apellido DNI DD/MM/YYYY Email Contrasena ContrasenaDirector" << std::endl;
-        
-        for (const Director& director : directores_) {
-            ficheroDirectores << director.GetNombre() << " "
-                              << director.GetApellido() << " "
-                              << director.GetDni() << " "
-                              << director.GetDia() << "/"
-                              << director.GetMes() << "/"
-                              << director.GetAnio() << " "
-                              << director.GetEmail() << " "
-                              << director.GetContrasena() << " "
+        for (const auto& director : directores_) {
+            ficheroDirectores << director.GetNombre() << " " << director.GetApellido() << " "
+                              << director.GetDni() << " " << director.GetDia() << "/"
+                              << director.GetMes() << "/" << director.GetAnio() << " "
+                              << director.GetEmail() << " " << director.GetContrasena() << " "
                               << director.GetContrasenaDirector() << std::endl;
         }
         ficheroDirectores.close();
@@ -428,27 +525,32 @@ void SistemaGestion::guardarDatos() {
     }
 
     // --- 3. Guardar Actividades ---
+    std::ofstream ficheroActividades("Actividades.txt", std::ios::trunc);
     if (!ficheroActividades.is_open()) {
-        std::cerr << "Error crítico: No se pudo abrir 'Actividades.txt' para guardar." << std::endl;
+        std::cerr << "Error: No se pudo guardar 'Actividades.txt'." << std::endl;
     } else {
         ficheroActividades << "# Formato: NombreActividad DD/MM/YYYY Precio" << std::endl;
-        
-        for (const Actividad& actividad : actividades_) {
-            // Asumimos que la clase Actividad tiene Getters para estos datos
-            // ¡Tendremos que añadirlos si faltan!
-            // ... (reemplaza la línea vieja) ...
+        for (const auto& actividad : actividades_) {
             ficheroActividades << actividad.GetNombreActividad() << " "
-                               << actividad.GetDia() << "/"
-                               << actividad.GetMes() << "/"
-                               << actividad.GetAnio() << " "
-                               << actividad.GetPrecio() << std::endl;    
-        
+                               << actividad.GetDia() << "/" << actividad.GetMes() << "/"
+                               << actividad.GetAnio() << " " << actividad.GetPrecio() << std::endl;
         }
         ficheroActividades.close();
         std::cout << "Guardadas " << actividades_.size() << " actividades." << std::endl;
     }
 
-    // (Aún no guardamos Preinscripciones ni Colas)
+    // --- 4. Guardar Preinscripciones ---
+    std::ofstream ficheroPreinscripciones("Preinscripciones.txt", std::ios::trunc);
+    if (!ficheroPreinscripciones.is_open()) {
+        std::cerr << "Error: No se pudo guardar 'Preinscripciones.txt'." << std::endl;
+    } else {
+        ficheroPreinscripciones << "# Formato: DNI_Usuario Nombre_Actividad" << std::endl;
+        for (const auto& pre : preinscripciones_) {
+            ficheroPreinscripciones << pre.dniUsuario << " " << pre.nombreActividad << std::endl;
+        }
+        ficheroPreinscripciones.close();
+        std::cout << "Guardadas " << preinscripciones_.size() << " preinscripciones." << std::endl;
+    }
 }
 
 
@@ -488,4 +590,10 @@ bool SistemaGestion::contieneDominio(const std::string& email) {
     size_t encontradoUco = email.find("@uco.es");
     size_t encontradoGmail = email.find("@gmail.com");
     return (encontradoUco != std::string::npos || encontradoGmail != std::string::npos);
+}
+
+bool SistemaGestion::esIBANValido(const std::string& iban) {
+    // Usamos la validación simple de formato español (ES + 22 dígitos)
+    std::regex formatoEspanol("ES[0-9]{22}");
+    return std::regex_match(iban, formatoEspanol);
 }
