@@ -2,8 +2,8 @@
 #define USUARIO_REGISTRADO_H
 
 #include<iostream>
+#include <string>
 #include "usuario.h"
-#include "actividad.h"
 
 class UsuarioRegistrado : public Usuario{
 
@@ -28,34 +28,16 @@ class UsuarioRegistrado : public Usuario{
 
         virtual ~UsuarioRegistrado() = default;
         
-        bool Preinscribirse(std::string actividad);
-        bool AnularPreinscripcion(std::string actividad, std::string dni);
-    
-        std::string GetDni(){return dni_;}
-        void SetDni(std::string dni){dni_=dni;}
-    
-        std::string GetEmail(){return email_;}
-        void SetEmail(std::string email){email_=email;}
-    
-        std::string GetContrasena(){return contrasena_;}
-        void SetContrasena(std::string contrasena){contrasena_=contrasena;}
-    
-        int GetDia(){return dia_;}
-        void SetDia(int dia){dia_=dia;}
-    
-        int GetMes(){return mes_;}
-        void SetMes(int mes){mes_=mes;}
         
-        int GetAnio(){return anio_;}
-        void SetAnio(int anio){anio_=anio;}
-    
-
-
-
-
+        // --- Getters ---
+        
+        std::string GetDni() const { return dni_; } 
+        std::string GetEmail() const { return email_; } 
+        std::string GetContrasena() const { return contrasena_; } 
+        int GetDia() const { return dia_; } 
+        int GetMes() const { return mes_; } 
+        int GetAnio() const { return anio_; } 
 
 };
-
-
 
 #endif

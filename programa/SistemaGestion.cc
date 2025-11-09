@@ -133,14 +133,167 @@ void SistemaGestion::mostrarMenuDirector() {
 }
 
 
-// --- Métodos de Carga/Guardado (Aún vacíos) ---
+// --- Métodos de Carga/Guardado ---
 
 void SistemaGestion::cargarDatos() {
-    std::cout << "Cargando datos... (Aún no implementado)" << std::endl;
+    std::ifstream fichero;
+    std::string linea;
+
+    // --- 1. Cargar Usuarios Registrados ---
+    fichero.open("UsuariosRegistrados.txt");
+    if (!fichero.is_open()) {
+        std::cout << "Advertencia: No se pudo abrir 'UsuariosRegistrados.txt'. Creando uno nuevo." << std::endl;
+    } else {
+        while (std::getline(fichero, linea)) {
+            if (linea.empty() || linea[0] == '#') continue; // Ignorar líneas vacías o comentarios
+
+            std::stringstream ss(linea);
+            std::string nombre, apellido, dni, fechaStr, email, contrasena;
+            int dia = 0, mes = 0, anio = 0;
+            char barra; // Para consumir el '/' en la fecha
+
+            // Formato: Nombre Apellido DNI DD/MM/YYYY Email Contrasena
+            ss >> nombre >> apellido >> dni >> dia >> barra >> mes >> barra >> anio >> email >> contrasena;
+
+            // Creamos un nuevo objeto UsuarioRegistrado con los datos leídos
+            UsuarioRegistrado nuevoUsuario(dni, nombre, apellido, contrasena, email, dia, mes, anio);
+            
+            // Añadimos el nuevo usuario a nuestro vector en memoria
+            usuarios_.push_back(nuevoUsuario);
+        }
+        fichero.close();
+        std::cout << "Cargados " << usuarios_.size() << " usuarios." << std::endl;
+    }
+
+    // --- 2. Cargar Directores ---
+    fichero.open("Directores.txt");
+    if (!fichero.is_open()) {
+        std::cout << "Advertencia: No se pudo abrir 'Directores.txt'. Creando uno nuevo." << std::endl;
+    } else {
+        while (std::getline(fichero, linea)) {
+            if (linea.empty() || linea[0] == '#') continue; 
+
+            std::stringstream ss(linea);
+            std::string nombre, apellido, dni, fechaStr, email, contrasena, contrasenaDir;
+            int dia = 0, mes = 0, anio = 0;
+            char barra; 
+
+            // Formato: Nombre Apellido DNI DD/MM/YYYY Email Contrasena ContrasenaDirector
+            ss >> nombre >> apellido >> dni >> dia >> barra >> mes >> barra >> anio >> email >> contrasena >> contrasenaDir;
+
+            Director nuevoDirector(dni, nombre, apellido, contrasena, contrasenaDir, email, dia, mes, anio);
+            directores_.push_back(nuevoDirector);
+        }
+        fichero.close();
+        std::cout << "Cargados " << directores_.size() << " directores." << std::endl;
+    }
+
+    // --- 3. Cargar Actividades ---
+    fichero.open("Actividades.txt");
+    if (!fichero.is_open()) {
+        std::cout << "Advertencia: No se pudo abrir 'Actividades.txt'. Creando uno nuevo." << std::endl;
+    } else {
+        while (std::getline(fichero, linea)) {
+            if (linea.empty() || linea[0] == '#') continue;
+
+            std::stringstream ss(linea);
+            std::string nombreActividad, fechaStr;
+            float precio;
+            int dia = 0, mes = 0, anio = 0;
+            char barra;
+
+            // Formato: NombreDeLaActividad (puede tener espacios) DD/MM/YYYY Precio
+            // Leer hasta la fecha es más complicado si el nombre tiene espacios.
+            // Por ahora, asumimos que el nombre NO tiene espacios para simplificar.
+            // Si tu nombre tiene espacios, necesitaremos un parseo más avanzado.
+            
+            // Formato (simple): NombreActividad DD/MM/YYYY Precio
+            ss >> nombreActividad >> dia >> barra >> mes >> barra >> anio >> precio;
+
+            // (Nota: Faltan Aforo en el .txt y en la clase Actividad)
+            Actividad nuevaActividad(nombreActividad, dia, mes, anio, 0 /*aforo*/, precio);
+            actividades_.push_back(nuevaActividad);
+        }
+        fichero.close();
+        std::cout << "Cargadas " << actividades_.size() << " actividades." << std::endl;
+    }
+
+    // (Aún no cargamos Preinscripciones ni Colas, lo haremos después)
 }
 
 void SistemaGestion::guardarDatos() {
-    std::cout << "Guardando datos... (Aún no implementado)" << std::endl;
+    // Abrimos los ficheros en modo 'trunc' (truncar), que borra
+    // el contenido anterior antes de escribir el nuevo.
+    std::ofstream ficheroUsuarios("UsuariosRegistrados.txt", std::ios::trunc);
+    std::ofstream ficheroDirectores("Directores.txt", std::ios::trunc);
+    std::ofstream ficheroActividades("Actividades.txt", std::ios::trunc);
+
+    // --- 1. Guardar Usuarios Registrados ---
+    if (!ficheroUsuarios.is_open()) {
+        std::cerr << "Error crítico: No se pudo abrir 'UsuariosRegistrados.txt' para guardar." << std::endl;
+    } else {
+        // Escribimos la cabecera (buena práctica)
+        ficheroUsuarios << "# Formato: Nombre Apellido DNI DD/MM/YYYY Email Contrasena" << std::endl;
+        
+        // Recorremos el vector de usuarios
+        for (const UsuarioRegistrado& usuario : usuarios_) {
+            // Escribimos los datos de cada usuario en una nueva línea
+            ficheroUsuarios << usuario.GetNombre() << " "
+                            << usuario.GetApellido() << " "
+                            << usuario.GetDni() << " "
+                            << usuario.GetDia() << "/"
+                            << usuario.GetMes() << "/"
+                            << usuario.GetAnio() << " "
+                            << usuario.GetEmail() << " "
+                            << usuario.GetContrasena() << std::endl;
+        }
+        ficheroUsuarios.close();
+        std::cout << "Guardados " << usuarios_.size() << " usuarios." << std::endl;
+    }
+
+    // --- 2. Guardar Directores ---
+    if (!ficheroDirectores.is_open()) {
+        std::cerr << "Error crítico: No se pudo abrir 'Directores.txt' para guardar." << std::endl;
+    } else {
+        ficheroDirectores << "# Formato: Nombre Apellido DNI DD/MM/YYYY Email Contrasena ContrasenaDirector" << std::endl;
+        
+        for (const Director& director : directores_) {
+            ficheroDirectores << director.GetNombre() << " "
+                              << director.GetApellido() << " "
+                              << director.GetDni() << " "
+                              << director.GetDia() << "/"
+                              << director.GetMes() << "/"
+                              << director.GetAnio() << " "
+                              << director.GetEmail() << " "
+                              << director.GetContrasena() << " "
+                              << director.GetContrasenaDirector() << std::endl;
+        }
+        ficheroDirectores.close();
+        std::cout << "Guardados " << directores_.size() << " directores." << std::endl;
+    }
+
+    // --- 3. Guardar Actividades ---
+    if (!ficheroActividades.is_open()) {
+        std::cerr << "Error crítico: No se pudo abrir 'Actividades.txt' para guardar." << std::endl;
+    } else {
+        ficheroActividades << "# Formato: NombreActividad DD/MM/YYYY Precio" << std::endl;
+        
+        for (const Actividad& actividad : actividades_) {
+            // Asumimos que la clase Actividad tiene Getters para estos datos
+            // ¡Tendremos que añadirlos si faltan!
+            // ... (reemplaza la línea vieja) ...
+            ficheroActividades << actividad.GetNombreActividad() << " "
+                               << actividad.GetDia() << "/"
+                               << actividad.GetMes() << "/"
+                               << actividad.GetAnio() << " "
+                               << actividad.GetPrecio() << std::endl;    
+        
+        }
+        ficheroActividades.close();
+        std::cout << "Guardadas " << actividades_.size() << " actividades." << std::endl;
+    }
+
+    // (Aún no guardamos Preinscripciones ni Colas)
 }
 
 

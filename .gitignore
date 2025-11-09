@@ -3,6 +3,7 @@
 *.out
 *.exe
 programa/programa-main
+programa-main
 
 # Archivos generados por CMake
 CMakeCache.txt
