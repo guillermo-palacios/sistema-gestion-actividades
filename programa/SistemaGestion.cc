@@ -92,11 +92,73 @@ void SistemaGestion::mostrarMenuVisitante() {
 // --- Métodos de Lógica (Aún vacíos) ---
 
 bool SistemaGestion::manejarLogin() {
+    int modo = 0;
+    std::string dni, contrasena, contrasenaDirector;
+
     std::cout << "--- Iniciar Sesión ---" << std::endl;
-    // ... Próximamente: Lógica de pedir DNI/Pass ...
-    // ... y buscar en los vectores 'usuarios_' y 'directores_' ...
-    // ... Si se encuentra, 'usuarioActual_' = new UsuarioRegistrado(...) ...
-    return false; // Por ahora, siempre falla
+
+    while (modo != 1 && modo != 2) {
+        std::cout << "==============================================================" << std::endl;
+        std::cout << "1-. Acceder como estudiante." << std::endl;
+        std::cout << "2-. Acceder como director." << std::endl;
+        std::cout << "Seleccione el modo:" << std::endl;
+        std::cout << "==============================================================" << std::endl;
+        std::cin >> modo;
+        if (modo != 1 && modo != 2) {
+            std::cout << "Seleccione un modo valido." << std::endl;
+        }
+    }
+
+    std::cout << "Introduzca su DNI: " << std::endl;
+    std::cin >> dni;
+    std::cout << "Introduzca su Contrasena: " << std::endl;
+    std::cin >> contrasena;
+
+    // --- 1. Limpiamos cualquier sesión anterior ---
+    // (Esto es por seguridad, por si 'cerrarSesion' no se llamó)
+    if (usuarioActual_ != nullptr) {
+        delete usuarioActual_;
+        usuarioActual_ = nullptr;
+    }
+
+    // --- 2. Lógica de Login ---
+    if (modo == 2) { // INTENTO DE LOGIN COMO DIRECTOR
+        std::cout << "Introduzca su Contrasena de Director: " << std::endl;
+        std::cin >> contrasenaDirector;
+
+        // Buscamos en el vector de directores
+        for (const Director& director : directores_) {
+            if (director.GetDni() == dni && 
+                director.GetContrasena() == contrasena &&
+                director.GetContrasenaDirector() == contrasenaDirector) 
+            {
+                // ¡Coincidencia! Creamos un NUEVO objeto Director en el puntero
+                // (Usamos el constructor de copia de la clase)
+                usuarioActual_ = new Director(director); 
+                return true; // Login exitoso
+            }
+        }
+        
+        // Si sale del bucle, no lo ha encontrado
+        std::cout << "Error: DNI, contraseña o clave de director incorrectos." << std::endl;
+        return false;
+
+    } else { // INTENTO DE LOGIN COMO ESTUDIANTE
+        
+        // Buscamos en el vector de usuarios
+        for (const UsuarioRegistrado& usuario : usuarios_) {
+            if (usuario.GetDni() == dni && usuario.GetContrasena() == contrasena) 
+            {
+                // ¡Coincidencia! Creamos un NUEVO objeto UsuarioRegistrado
+                usuarioActual_ = new UsuarioRegistrado(usuario);
+                return true; // Login exitoso
+            }
+        }
+
+        // Si sale del bucle, no lo ha encontrado
+        std::cout << "Error: DNI o contraseña incorrectos." << std::endl;
+        return false;
+    }
 }
 
 bool SistemaGestion::manejarRegistro() {
