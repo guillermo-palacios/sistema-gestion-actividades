@@ -18,11 +18,17 @@ private:
         // (Podemos añadir más campos si es necesario, como el email o nombre)
     };
 
+    struct ColaEspera {
+        std::string nombreActividad;
+        std::string dniUsuario;
+    };
+
     // --- Almacenamiento de Datos en Memoria ---
     std::vector<UsuarioRegistrado> usuarios_;
     std::vector<Director> directores_;
     std::vector<Actividad> actividades_;
     std::vector<Preinscripcion> preinscripciones_;
+    std::vector<ColaEspera> colas_;
 
     // --- Usuario Actual ---
     Usuario* usuarioActual_; // Puntero al usuario logueado

@@ -624,7 +624,36 @@ bool SistemaGestion::manejarModificarActividad() {
 }
 
 void SistemaGestion::manejarVerCola() {
-    std::cout << "¡Función 'Ver Cola' aún no implementada!" << std::endl;
+    std::string nombreActividad;
+    std::cin.ignore(); // Limpiar buffer
+    std::cout << "Introduce el nombre de la actividad para ver su cola de espera: " << std::endl;
+    std::getline(std::cin, nombreActividad);
+
+    int contador = 0;
+    std::cout << "--- Cola de Espera para '" << nombreActividad << "' ---" << std::endl;
+
+    // Recorremos el vector de colas buscando coincidencias
+    for (const auto& cola : colas_) {
+        if (cola.nombreActividad == nombreActividad) {
+            // ¡Coincidencia! Buscamos el nombre del usuario
+            std::string nombreUsuario = "DNI: " + cola.dniUsuario; // Default
+            for (const auto& usr : usuarios_) {
+                if (usr.GetDni() == cola.dniUsuario) {
+                    nombreUsuario = usr.GetNombre() + " " + usr.GetApellido() + " (" + usr.GetEmail() + ")";
+                    break;
+                }
+            }
+            std::cout << (contador + 1) << ". " << nombreUsuario << std::endl;
+            contador++;
+        }
+    }
+
+    if (contador == 0) {
+        std::cout << "No hay nadie en la cola de espera para esta actividad." << std::endl;
+    } else {
+        std::cout << "Total: " << contador << " personas en espera." << std::endl;
+    }
+    std::cout << "========================================" << std::endl;
 }
 
 // --- Métodos de Carga/Guardado ---
@@ -699,7 +728,25 @@ void SistemaGestion::cargarDatos() {
         }
         fichero.close();
         std::cout << "Cargadas " << preinscripciones_.size() << " preinscripciones." << std::endl;
-    }}
+    }
+
+    // --- 5. Cargar Colas ---
+    fichero.open("Colas.txt");
+    if (!fichero.is_open()) {
+        std::cout << "Advertencia: No se pudo abrir 'Colas.txt'." << std::endl;
+    } else {
+        while (std::getline(fichero, linea)) {
+            if (linea.empty() || linea[0] == '#') continue;
+            std::stringstream ss(linea);
+            ColaEspera cola;
+            // Formato: DNI_Usuario Nombre_Actividad
+            ss >> cola.dniUsuario >> cola.nombreActividad;
+            colas_.push_back(cola);
+        }
+        fichero.close();
+        std::cout << "Cargadas " << colas_.size() << " colas de espera." << std::endl;
+    }
+}
 
 void SistemaGestion::guardarDatos() {
     // --- 1. Guardar Usuarios ---
@@ -761,6 +808,19 @@ void SistemaGestion::guardarDatos() {
         }
         ficheroPreinscripciones.close();
         std::cout << "Guardadas " << preinscripciones_.size() << " preinscripciones." << std::endl;
+    }
+
+    // --- 5. Guardar Colas ---
+    std::ofstream ficheroColas("Colas.txt", std::ios::trunc);
+    if (!ficheroColas.is_open()) {
+        std::cerr << "Error: No se pudo guardar 'Colas.txt'." << std::endl;
+    } else {
+        ficheroColas << "# Formato: DNI_Usuario Nombre_Actividad" << std::endl;
+        for (const auto& cola : colas_) {
+            ficheroColas << cola.dniUsuario << " " << cola.nombreActividad << std::endl;
+        }
+        ficheroColas.close();
+        std::cout << "Guardadas " << colas_.size() << " colas de espera." << std::endl;
     }
 }
 
