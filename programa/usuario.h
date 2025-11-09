@@ -16,6 +16,7 @@ class Usuario{
         apellido_=apellido; 
     }
 
+    virtual ~Usuario() = default; // <-- Esto hace la clase polimórfica
 
     bool IniciarSesion(std::string dni, std::string contrasena, std::string contrasenaDirector);
     bool Registrarse(std::string nombre, std::string apellido, std::string dni, int dia, int mes, int anio, std::string email, std::string contrasena, std::string contrasenaDirector);

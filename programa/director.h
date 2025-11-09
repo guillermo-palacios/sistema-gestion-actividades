@@ -14,7 +14,9 @@ class Director : public UsuarioRegistrado{
     Director(std::string dni, std::string nombre, std::string apellido, std::string contrasena, std::string contrasena_director, std::string email = "empty", int dia = 0, int mes = 0, int anio = 0):UsuarioRegistrado(dni, nombre, apellido, email, contrasena, dia, mes ,anio){
         contrasena_director_=contrasena_director;
     }
-   
+    
+    virtual ~Director() = default;
+
     bool PublicarActividad();
     bool ModificarActividad(std::string nombreActividad);
     int VerAsistencia(std::string nombreActividad);

@@ -3,7 +3,7 @@
 #include <sstream>
 #include <vector>
 
-
+/*
 bool Usuario::IniciarSesion(std::string dni, std::string contrasena, std::string contrasenaDirector){
     
     // Verificación de la contraseña del director
@@ -241,4 +241,4 @@ bool Usuario::VisualizarActividades(){
     }
 
     return true;
-}
+}*/

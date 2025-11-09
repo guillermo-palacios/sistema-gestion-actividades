@@ -25,6 +25,8 @@ class UsuarioRegistrado : public Usuario{
             mes_=mes;
             anio_=anio;   
         }
+
+        virtual ~UsuarioRegistrado() = default;
         
         bool Preinscribirse(std::string actividad);
         bool AnularPreinscripcion(std::string actividad, std::string dni);

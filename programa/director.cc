@@ -2,7 +2,7 @@
 #include<fstream>
 #include<vector>
 
-
+/*
 bool EsFechaCorrecta(int dia, int mes, int anio) {
     // Verificar el año
     if (anio < 0) {
@@ -267,4 +267,4 @@ bool Director::VerCola(){
     }
 
     return true;
-}
+}*/
