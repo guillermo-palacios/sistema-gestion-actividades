@@ -566,7 +566,60 @@ bool SistemaGestion::manejarExpulsarAlumno() {
 // --- (Funciones pendientes) ---
 
 bool SistemaGestion::manejarModificarActividad() {
-    std::cout << "¡Función 'Modificar Actividad' aún no implementada!" << std::endl;
+    std::string nombreActividad;
+    std::cin.ignore(); // Limpiar buffer
+    std::cout << "Introduce el nombre de la actividad que deseas modificar: " << std::endl;
+    std::getline(std::cin, nombreActividad);
+
+    // --- 1. Buscar la actividad ---
+    // ¡OJO! Necesitamos un iterador, no un 'const'
+    for (auto it = actividades_.begin(); it != actividades_.end(); ++it) {
+        if (it->GetNombreActividad() == nombreActividad) {
+            // ¡La encontramos! 'it' apunta a la actividad en el vector
+            
+            std::cout << "Actividad encontrada. Introduce los nuevos datos." << std::endl;
+            
+            // --- 2. Pedir y Validar Nuevos Datos ---
+            std::string nuevoNombre;
+            int nuevoDia, nuevoMes, nuevoAnio, nuevoAforo;
+            float nuevoPrecio;
+
+            std::cout << "Introduce el NUEVO nombre (o el mismo): " << std::endl;
+            std::cin >> nuevoNombre;
+
+            // Validamos que el NUEVO nombre no exista (excepto en esta misma actividad)
+            for (const auto& otraAct : actividades_) {
+                if (otraAct.GetNombreActividad() == nuevoNombre && otraAct.GetNombreActividad() != nombreActividad) {
+                    std::cout << "Error: Ya existe OTRA actividad con ese nuevo nombre." << std::endl;
+                    return false;
+                }
+            }
+
+            std::cout << "Introduce la NUEVA fecha 'DD MM YYYY': " << std::endl;
+            std::cin >> nuevoDia >> nuevoMes >> nuevoAnio;
+            if (!SistemaGestion::esFechaValida(nuevoDia, nuevoMes, nuevoAnio)) {
+                std::cout << "Error: Fecha inválida." << std::endl;
+                return false;
+            }
+
+            std::cout << "Introduce el NUEVO precio: " << std::endl;
+            std::cin >> nuevoPrecio;
+            
+            std::cout << "Introduce el NUEVO aforo: " << std::endl;
+            std::cin >> nuevoAforo;
+
+            // --- 3. Actualizar el objeto usando los Setters ---
+            it->SetNombreActividad(nuevoNombre);
+            it->SetFecha(nuevoDia, nuevoMes, nuevoAnio);
+            it->SetPrecio(nuevoPrecio);
+            it->SetAforo(nuevoAforo);
+
+            return true; // ¡Éxito!
+        }
+    }
+
+    // Si el bucle termina, no se encontró la actividad
+    std::cout << "Error: No se ha encontrado ninguna actividad con ese nombre." << std::endl;
     return false;
 }
 

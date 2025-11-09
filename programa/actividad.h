@@ -33,7 +33,16 @@ public:
     int GetAforoMaximo() const { return aforoMaximo_; }
     float GetPrecio() const { return precio_; }
     
-    // (Los Setters no los necesitamos por ahora)
+    // --- Setters ---
+    // (Necesarios para modificar la actividad)
+    void SetNombreActividad(const std::string& nombre) { nombreActividad_ = nombre; }
+    void SetFecha(int dia, int mes, int anio) {
+        dia_ = dia;
+        mes_ = mes;
+        anio_ = anio;
+    }
+    void SetPrecio(float precio) { precio_ = precio; }
+    void SetAforo(int aforo) { aforoMaximo_ = aforo; }
 };
 
 #endif
